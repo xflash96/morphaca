@@ -1,0 +1,26 @@
+Backend:
+	Command line tool
+		In cpp, using openCV & gcc
+	Tools:
+		Morph
+		Input:
+			2 Images, pair of feature points
+		Output:
+			Interpolated Image Sequence
+		Tech:
+			Gaussian interpolation
+			Triangular Segmentation
+			Linear transformation of feat point
+
+	Feature Extract
+	Input:
+		2 images
+	Output:
+		Correspondence pair
+	Tech:
+		Face (http://code.google.com/p/aam-opencv/
+		or HOG descrptor (http://en.wikipedia.org/wiki/Histogram_of_oriented_gradients
+
+Frontend:
+	Web UI
+	Javascript / python pyramid / ajax
