@@ -5,7 +5,7 @@ LDFLAGS=$(shell pkg-config opencv --libs) -lm
 
 all: parser.o main.o
 	${CC} parser.o main.o ${CPPLAGS} ${LDFLAGS} -o morph
-main.o: main.cpp
+main.o:
 	${CC} main.cpp ${CPPLAGS} ${LDFLAGS} -c
 parser.o: parser.h parser.cpp
 	${CC} parser.cpp ${CPPLAGS} ${LDFLAGS} -c
