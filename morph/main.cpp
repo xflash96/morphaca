@@ -22,8 +22,18 @@ int main( int argc, char *argv[] )
 	Mat img_src, img_dst ;
 	
 
-	if( ParseParameters( img_src, img_dst, para, argc, argv ) == 0 )
+	if( argc < 7 || ParseParameters( img_src, img_dst, para, argc, argv ) == 0 )
+	{
+		cerr << "\n" ;
+		cerr << "Usage: ./morph <src image> <dst image> <parameters>\n" ;
+		cerr << "-T	The steps during the morphing.\n" ;
+		cerr << "-SL	The lines of src image(Required)\n" ;
+		cerr << "-DL	The lines of dst image(Required)\n" ;
+		cerr << "-a	Parameter a of warpping\n" ;
+		cerr << "-b	Parameter b of warpping\n" ;
+		cerr << "-p	Parameter p of warpping\n" ;
 		return -1 ;
+	}
 
  	for( int t = 0 ; t <= para.T ; t++ )
 	{
