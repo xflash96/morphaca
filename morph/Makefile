@@ -1,7 +1,7 @@
 CC=g++
 CFLAGS=$(shell pkg-config opencv --cflags) -g -Wall -Wconversion 
 CPPFLAGS=$(CFLAGS)
-LDFLAGS=$(shell pkg-config opencv --libs) -lm
+LDFLAGS=$(shell pkg-config opencv --libs) -lm -O3
 
 all: parser.o main.o
 	${CC} parser.o main.o ${CPPLAGS} ${LDFLAGS} -o morph

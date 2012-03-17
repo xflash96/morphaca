@@ -60,12 +60,14 @@ Mat Warpping( Mat &img_src, PARA &para, Mat line_src, Mat line_dst, int rows, in
 
 	int n ;
 	double u, v, w, W ;
+	double unit ;
 	Mat morph ;
 	Vec2f X, _P, _Q, P, Q, QmP, _QmP, _X ;
 	Vec3f pixel ;
 
 	morph = Mat::zeros( rows, cols, CV_32FC3 ) ;
 	n = line_src.rows ;
+	unit = sqrt( img_src.rows*img_src.rows+img_src.cols*img_src.cols ) ;
 	for( int i=0 ; i<rows ; i++ )
 		for( int j=0 ; j<cols ; j++ )
 		{
@@ -82,7 +84,6 @@ Mat Warpping( Mat &img_src, PARA &para, Mat line_src, Mat line_dst, int rows, in
 				u = (X-P).dot( QmP )/( QmP.val[0]*QmP.val[0]+QmP.val[1]*QmP.val[1] ) ;
 				v = (X-P).dot( Vec2f( QmP.val[1], -QmP.val[0] ) )/norm(QmP) ;
 				_X = _P + u*(_QmP) + v/norm( _QmP )*( Vec2f( _QmP.val[1], -_QmP.val[0] ) ) ;
-				w = pow( pow( abs(u), para.warp_p )/( para.warp_a+abs(v) ), para.warp_b ) ;
 				pixel = GaussianInterpolation( img_src,
 								_X.val[0]*img_src.rows,
 								_X.val[1]*img_src.cols, 1 ) ;
@@ -90,6 +91,7 @@ Mat Warpping( Mat &img_src, PARA &para, Mat line_src, Mat line_dst, int rows, in
 				pixel1 = (img_src.at<Vec3f>)(i, j) ;
 				if( pixel.val[0] > 0 )
 				{
+					w = pow( pow( abs(u*unit), para.warp_p )/( para.warp_a+abs(v*unit) ), para.warp_b ) ;
 					morph.at<Vec3f>(i, j) = morph.at<Vec3f>(i, j) + w*pixel ; 
 					W += w ;
 				}
@@ -101,7 +103,7 @@ Mat Warpping( Mat &img_src, PARA &para, Mat line_src, Mat line_dst, int rows, in
 
 Vec3f GaussianInterpolation( Mat &img_src, double x, double y, double sigma )
 {
-	double w, W ;
+	double w, W, dis ;
 	int quan_x, quan_y, rows, cols ;
 	rows = img_src.rows ;
 	cols = img_src.cols ;
@@ -112,17 +114,23 @@ Vec3f GaussianInterpolation( Mat &img_src, double x, double y, double sigma )
 		{
 			quan_x = (int)( x+i+1e-7 ) ;
 			quan_y = (int)( y+j+1e-7 ) ;
-			if( quan_x<0 || quan_x>=rows || quan_y<0 || quan_y >= cols )
+			dis = ( (quan_x-x)*(quan_x-x)+(quan_y-y)*(quan_y-y) )/sigma ;
+			if( sqrt(dis)>2+1e-7 )
 				continue ;
-			w = 1/(2*PI*sigma)*exp( -1/(2*sigma)*( (quan_x-x)*(quan_x-x)+(quan_y-y)*(quan_y-y) ) ) ;
-			W += w ;
-			pixel = pixel+w*img_src.at<Vec3f>(quan_x, quan_y) ;
+			if( quan_x<0 || quan_x>=rows || quan_y<0 || quan_y >= cols  )
+				continue ;
+				//pixel = pixel+w*a
+			else
+			{
+				w = 1/( 2*PI*sigma)*exp( -0.5*dis ) ;
+				W += w ;
+				pixel = pixel+w*img_src.at<Vec3f>(quan_x, quan_y) ;
+			}
 		}
 	if( abs( W ) < 1e-7 )
 		Vec3f pixel = Vec3f(-1, -1, -1) ;
 	else
-	{
 		pixel = 1/W*pixel ;
-	}
 	return pixel ;
+
 }

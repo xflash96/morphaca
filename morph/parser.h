@@ -16,4 +16,4 @@ public:
 } ;
 
 bool ParseParameters( Mat &img_src, Mat &img_dst, PARA &para,  int argc, char *argv[] ) ;
-bool ParseLine( Mat &lines, char *filename ) ;
+int ParseLine( Mat &lines, char *filename ) ;
