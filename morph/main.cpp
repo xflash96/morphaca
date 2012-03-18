@@ -12,7 +12,7 @@ using namespace std ;
 
 
 Mat CrossDissoving( Mat &img_src, Mat &img_dst, double t ) ;
-Mat Warpping( Mat &img_src, PARA &para, Mat line_src, Mat line_dst, int rows, int cols ) ;
+Mat Warping( Mat &img_src, PARA &para, Mat line_src, Mat line_dst, int rows, int cols ) ;
 Vec3f GaussianInterpolation( Mat &img_src, double normal_x, double normal_y, double sigma ) ;
 double const PI=4*atan(1);
 
@@ -37,12 +37,12 @@ int main( int argc, char *argv[] )
 
  	for( int t = 0 ; t <= para.T ; t++ )
 	{
-		Mat src_warp = Warpping( img_src, para, para.src_lines,
+		Mat src_warp = Warping( img_src, para, para.src_lines,
 		                         (1-t/para.T)*para.src_lines+t/para.T*para.dst_lines, 
 					 (int)( (1-t/para.T)*(img_src.rows)+t/para.T*(img_dst.rows)+1e-7 ), 
 					 (int)( (1-t/para.T)*(img_src.cols)+t/para.T*(img_dst.cols)+1e-7 ) ) ;
 					 
-		Mat dst_warp = Warpping( img_dst, para, para.dst_lines,
+		Mat dst_warp = Warping( img_dst, para, para.dst_lines,
 		                         (1-t/para.T)*para.src_lines+t/para.T*para.dst_lines, 
 					 (int)( (1-t/para.T)*(img_src.rows)+t/para.T*(img_dst.rows)+1e-7 ), 
 					 (int)( (1-t/para.T)*(img_src.cols)+t/para.T*(img_dst.cols)+1e-7 ) ) ;
@@ -65,7 +65,7 @@ Mat CrossDissoving( Mat &img_src, Mat &img_dst, double t )
 	return mix ;
 }
 
-Mat Warpping( Mat &img_src, PARA &para, Mat line_src, Mat line_dst, int rows, int cols )
+Mat Warping( Mat &img_src, PARA &para, Mat line_src, Mat line_dst, int rows, int cols )
 {
 
 	int n ;
@@ -77,7 +77,7 @@ Mat Warpping( Mat &img_src, PARA &para, Mat line_src, Mat line_dst, int rows, in
 
 	morph = Mat::zeros( rows, cols, CV_32FC3 ) ;
 	n = line_src.rows ;
-	unit = sqrt( img_src.rows*img_src.rows+img_src.cols*img_src.cols ) ;
+	unit = sqrt( rows*rows+cols*cols ) ;
 	for( int i=0 ; i<rows ; i++ )
 		for( int j=0 ; j<cols ; j++ )
 		{
@@ -97,11 +97,10 @@ Mat Warpping( Mat &img_src, PARA &para, Mat line_src, Mat line_dst, int rows, in
 				pixel = GaussianInterpolation( img_src,
 								_X.val[0]*img_src.rows,
 								_X.val[1]*img_src.cols, 1 ) ;
-				Vec3f pixel1 ;
-				pixel1 = (img_src.at<Vec3f>)(i, j) ;
 				if( pixel.val[0] > 0 )
 				{
-					w = pow( pow( abs(u*unit), para.warp_p )/( para.warp_a+abs(v*unit) ), para.warp_b ) ;
+					//w = pow( pow( abs(u*unit), para.warp_p )/( para.warp_a+abs(v*unit) ), para.warp_b ) ;
+					w = pow( pow( norm(QmP)*unit, para.warp_p )/( para.warp_a+abs(v*unit) ), para.warp_b ) ;
 					morph.at<Vec3f>(i, j) = morph.at<Vec3f>(i, j) + w*pixel ; 
 					W += w ;
 				}

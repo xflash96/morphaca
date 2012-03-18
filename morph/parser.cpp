@@ -10,8 +10,8 @@ PARA::PARA()
 {
 	T = 10 ;
 	warp_p = 0.5 ;
-	warp_a = 1 ;
-	warp_b = 1.5 ;
+	warp_a = 0.5 ;
+	warp_b = 1 ;
 }
 
 bool ParseParameters( Mat &img_src, Mat &img_dst, PARA &para,  int argc, char *argv[] ) 
