@@ -10,8 +10,8 @@ PARA::PARA()
 {
 	T = 10 ;
 	warp_p = 0.5 ;
-	warp_a = 1 ;
-	warp_b = 1.5 ;
+	warp_a = 0.1 ;
+	warp_b = 1 ;
 }
 
 bool ParseParameters( Mat &img_src, Mat &img_dst, PARA &para,  int argc, char *argv[] ) 
@@ -84,12 +84,6 @@ int ParseLine( Mat &lines, char *filename )
 		if( idx[i] != to[i] )
 			n_line++ ;
 		idx_map[ idx[i] ] = i ;
-		
-		//*******
-		//x[i]= x[i]/414 ;
-		//y[i]= y[i]/729 ;
-		//*******
-
 
 	}
 	fclose(fp) ;
