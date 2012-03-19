@@ -10,7 +10,7 @@ PARA::PARA()
 {
 	T = 10 ;
 	warp_p = 0.5 ;
-	warp_a = 0.5 ;
+	warp_a = 0.1 ;
 	warp_b = 1 ;
 }
 

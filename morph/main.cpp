@@ -1,5 +1,6 @@
 /* from http://www.opencv.org.cn/index.php */
 #include <iostream>
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cmath>
@@ -14,6 +15,7 @@ using namespace std ;
 Mat CrossDissoving( Mat &img_src, Mat &img_dst, double t ) ;
 Mat Warping( Mat &img_src, PARA &para, Mat line_src, Mat line_dst, int rows, int cols ) ;
 Vec3f GaussianInterpolation( Mat &img_src, double normal_x, double normal_y, double sigma ) ;
+double countDisToSegment( Vec2f P, Vec2f Q, Vec2f X, double min_dis_to_line ) ;
 double const PI=4*atan(1);
 
 int main( int argc, char *argv[] )
@@ -81,7 +83,8 @@ Mat Warping( Mat &img_src, PARA &para, Mat line_src, Mat line_dst, int rows, int
 	for( int i=0 ; i<rows ; i++ )
 		for( int j=0 ; j<cols ; j++ )
 		{
-			X = Vec2f( i/(double)rows, j/(double)cols ) ;
+			//X = Vec2f( i/(double)rows, j/(double)cols ) ;
+			X = Vec2f( i, j ) ;
 			W = 0 ;
 			for( int l=0 ; l<n ; l++ )
 			{
@@ -89,18 +92,29 @@ Mat Warping( Mat &img_src, PARA &para, Mat line_src, Mat line_dst, int rows, int
 				Q = line_dst.at<Vec2f>(l, 1);
 				_P = line_src.at<Vec2f>(l, 0) ;
 				_Q = line_src.at<Vec2f>(l, 1) ;
+
+				P.val[0] *= rows ;
+				P.val[1] *= cols ;
+				Q.val[0] *= rows ;
+				Q.val[1] *= cols ;
+				_P.val[0] *= img_src.rows ;
+				_P.val[1] *= img_src.cols ;
+				_Q.val[0] *= img_src.rows ;
+				_Q.val[1] *= img_src.cols ;
+
 				QmP = Q-P ;
 				_QmP = _Q-_P ;
 				u = (X-P).dot( QmP )/( QmP.val[0]*QmP.val[0]+QmP.val[1]*QmP.val[1] ) ;
 				v = (X-P).dot( Vec2f( QmP.val[1], -QmP.val[0] ) )/norm(QmP) ;
+
 				_X = _P + u*(_QmP) + v/norm( _QmP )*( Vec2f( _QmP.val[1], -_QmP.val[0] ) ) ;
 				pixel = GaussianInterpolation( img_src,
-								_X.val[0]*img_src.rows,
-								_X.val[1]*img_src.cols, 1 ) ;
+								_X.val[0],
+								_X.val[1], 1 ) ;
+
 				if( pixel.val[0] > 0 )
 				{
-					//w = pow( pow( abs(u*unit), para.warp_p )/( para.warp_a+abs(v*unit) ), para.warp_b ) ;
-					w = pow( pow( norm(QmP)*unit, para.warp_p )/( para.warp_a+abs(v*unit) ), para.warp_b ) ;
+					w = pow( pow( norm(QmP), para.warp_p )/( para.warp_a+countDisToSegment( P, Q, X, abs(v) ) ), para.warp_b ) ;
 					morph.at<Vec3f>(i, j) = morph.at<Vec3f>(i, j) + w*pixel ; 
 					W += w ;
 				}
@@ -128,7 +142,6 @@ Vec3f GaussianInterpolation( Mat &img_src, double x, double y, double sigma )
 				continue ;
 			if( quan_x<0 || quan_x>=rows || quan_y<0 || quan_y >= cols  )
 				continue ;
-				//pixel = pixel+w*a
 			else
 			{
 				w = 1/( 2*PI*sigma)*exp( -0.5*dis ) ;
@@ -142,4 +155,12 @@ Vec3f GaussianInterpolation( Mat &img_src, double x, double y, double sigma )
 		pixel = 1/W*pixel ;
 	return pixel ;
 
+}
+double countDisToSegment( Vec2f P, Vec2f Q, Vec2f X, double min_dis_to_line )
+{
+	Vec2f QmP = Q-P ;
+	if( (X-P).dot( QmP ) * ( X-Q ).dot(QmP) < 0 )
+		return min_dis_to_line ;
+	else
+		return min( norm( X-P ), norm(X-Q) ) ;
 }

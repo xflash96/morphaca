@@ -9,8 +9,8 @@ double const PI=4*atan(1);
 PARA::PARA()
 {
 	T = 10 ;
-	warp_p = 0.5 ;
-	warp_a = 0.5 ;
+	warp_p = 0 ;
+	warp_a = 0.1 ;
 	warp_b = 1 ;
 }
 
