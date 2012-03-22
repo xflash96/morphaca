@@ -18,7 +18,7 @@ Mat CrossDissoving( Mat &img_src, Mat &img_dst, Qfloat t ) ;
 Mat Warping( Mat &img_src, PARA &para, Mat line_src, Mat line_dst, int rows, int cols ) ;
 inline Vec3f GaussianInterpolation( Mat &img_src, Qfloat normal_x, Qfloat normal_y, Qfloat sigma ) ;
 inline Vec3f GaussianKernelInterpolation( Mat &img_src, Qfloat normal_x, Qfloat normal_y, Qfloat sigma ) ;
-Qfloat countDisToSegment( Vec2f P, Vec2f Q, Vec2f X, Qfloat min_dis_to_line ) ;
+inline Qfloat countDisToSegment( Vec2f P, Vec2f Q, Vec2f X, Qfloat min_dis_to_line ) ;
 Qfloat const PI=4*atan(1);
 
 int main( int argc, char *argv[] )
@@ -40,6 +40,8 @@ int main( int argc, char *argv[] )
 		return -1 ;
 	}
 
+	time_t st = time(0);
+	fprintf(stderr, "a%lf b%lf p%lf\n", para.warp_a, para.warp_b, para.warp_p);
  	for( int t = 0 ; t <= para.T ; t++ )
 	{
 		Mat src_warp = Warping( img_src, para, para.src_lines,
@@ -56,6 +58,9 @@ int main( int argc, char *argv[] )
 		char s[50] ;
 		sprintf( s, "test%02d.png", t ) ;
 		imwrite( s, 255*morph ) ;
+
+		time_t now = time(0);
+		fprintf(stderr, "t=%d\n", (int)(now-st));
 	}
 
 
@@ -74,61 +79,74 @@ Mat Warping( Mat &img_src, PARA &para, Mat line_src, Mat line_dst, int rows, int
 {
 
 	int n ;
-	Qfloat u, v, w, W ;
+	Qfloat u, v, w ;
 	Qfloat unit ;
-	Mat morph ;
+	Mat morph, W;
 	Vec2f X, _P, _Q, P, Q, QmP, _QmP, _X ;
 	Vec3f pixel ;
-
-	time_t st = time(0);
+	Vec2f u_param, v_param, x_param;
 
 	morph = Mat::zeros( rows, cols, CV_32FC3 ) ;
-	n = line_src.rows ;
+	W = Mat::zeros( rows, cols, CV_32FC1 ) ;
+	n = line_src.cols;
 	unit = sqrt( rows*rows+cols*cols ) ;
-	for( int i=0 ; i<rows ; i++ ){
-		time_t now = time(0);
-		fprintf(stderr, "%d t=%d\n", i, (int)(now-st));
-		for( int j=0 ; j<cols ; j++ )
-		{
-			//X = Vec2f( i/(Qfloat)rows, j/(Qfloat)cols ) ;
-			X = Vec2f( i, j ) ;
-			W = 0 ;
-			for( int l=0 ; l<n ; l++ )
+	/* precalc line dist
+	*/
+
+	const Vec2f* line_dst_0 = line_dst.ptr<Vec2f>(0);
+	const Vec2f* line_dst_1 = line_dst.ptr<Vec2f>(1);
+	const Vec2f* line_src_0 = line_src.ptr<Vec2f>(0);
+	const Vec2f* line_src_1 = line_src.ptr<Vec2f>(1);
+	for( int l=0 ; l<n ; l++ )
+	{
+		P = line_dst_0[l] ;
+		Q = line_dst_1[l];
+		_P = line_src_0[l] ;
+		_Q = line_src_1[l] ;
+
+		P.val[0] *= rows ;
+		P.val[1] *= cols ;
+		Q.val[0] *= rows ;
+		Q.val[1] *= cols ;
+		_P.val[0] *= img_src.rows ;
+		_P.val[1] *= img_src.cols ;
+		_Q.val[0] *= img_src.rows ;
+		_Q.val[1] *= img_src.cols ;
+
+		QmP = Q-P ;
+		_QmP = _Q-_P ;
+		u_param = QmP*(1/( QmP.val[0]*QmP.val[0]+QmP.val[1]*QmP.val[1] )) ;
+		v_param = Vec2f( QmP.val[1], -QmP.val[0] )*(1/norm(QmP)) ;
+		x_param = 1/norm(_QmP)*Vec2f(_QmP.val[1], -_QmP.val[0]);
+
+		for( int i=0 ; i<rows ; i++ ){
+			Vec3f* morph_i = morph.ptr<Vec3f>(i);
+			float* W_i = W.ptr<float>(i);
+			for( int j=0 ; j<cols ; j++ )
 			{
-				P = line_dst.at<Vec2f>(l, 0) ;
-				Q = line_dst.at<Vec2f>(l, 1);
-				_P = line_src.at<Vec2f>(l, 0) ;
-				_Q = line_src.at<Vec2f>(l, 1) ;
+				//X = Vec2f( i/(Qfloat)rows, j/(Qfloat)cols ) ;
+				X = Vec2f( i, j ) ;
 
-				P.val[0] *= rows ;
-				P.val[1] *= cols ;
-				Q.val[0] *= rows ;
-				Q.val[1] *= cols ;
-				_P.val[0] *= img_src.rows ;
-				_P.val[1] *= img_src.cols ;
-				_Q.val[0] *= img_src.rows ;
-				_Q.val[1] *= img_src.cols ;
+				u = (X-P).dot( u_param ) ;
+				v = (X-P).dot( v_param ) ;
 
-				QmP = Q-P ;
-				_QmP = _Q-_P ;
-				u = (X-P).dot( QmP )/( QmP.val[0]*QmP.val[0]+QmP.val[1]*QmP.val[1] ) ;
-				v = (X-P).dot( Vec2f( QmP.val[1], -QmP.val[0] ) )/norm(QmP) ;
+				_X = _P + u*(_QmP) + v*x_param ;
 
-				_X = _P + u*(_QmP) + v/norm( _QmP )*( Vec2f( _QmP.val[1], -_QmP.val[0] ) ) ;
-				pixel = GaussianKernelInterpolation( img_src,
-								_X.val[0],
-								_X.val[1], 1 ) ;
+				int _x = (int) _X.val[0], _y = (int) _X.val[1];
 
-				if( pixel.val[0] > 0 )
+				if(_x>=0 && _y>=0 && _x<img_src.rows && _y<img_src.cols)
 				{
-					w = pow( pow( norm(QmP), para.warp_p )/( para.warp_a+countDisToSegment( P, Q, X, abs(v) ) ), para.warp_b ) ;
-					morph.at<Vec3f>(i, j) = morph.at<Vec3f>(i, j) + w*pixel ; 
-					W += w ;
+					w = 1/( countDisToSegment( P, Q, X, abs(v) ) );
+					pixel = img_src.at<Vec3f>(_x, _y);
+					morph_i[j] += w*pixel ; 
+					W_i[j] += w ;
 				}
 			}
-			morph.at<Vec3f>(i, j) = 1/W*morph.at<Vec3f>(i, j) ;
 		}
 	}
+	for( int i=0; i<rows; i++)
+		for( int j=0; j<cols; j++)
+			morph.at<Vec3f>(i, j) = 1/W.at<float>(i,j)*morph.at<Vec3f>(i, j) ;
 	return morph ;
 }
 
@@ -174,6 +192,13 @@ Qfloat _GaussianKernel[] = {
 };
 Vec3f GaussianKernelInterpolation( Mat &img_src, Qfloat x, Qfloat y, Qfloat sigma )
 {
+#if 1
+	int _x = (int)x, _y = (int)y;
+	if(_x<0 || _y<0 || _x>=img_src.rows || _y>=img_src.cols)
+		return Vec3f(-1, -1, -1);
+	else
+		return img_src.at<Vec3f>(_x, _y);
+#endif
 	Qfloat w, W, dis ;
 	int quan_x, quan_y, rows, cols ;
 	rows = img_src.rows ;
@@ -208,9 +233,12 @@ Vec3f GaussianKernelInterpolation( Mat &img_src, Qfloat x, Qfloat y, Qfloat sigm
 
 Qfloat countDisToSegment( Vec2f P, Vec2f Q, Vec2f X, Qfloat min_dis_to_line )
 {
+#if 0
 	Vec2f QmP = Q-P ;
 	if( (X-P).dot( QmP ) * ( X-Q ).dot(QmP) < 0 )
-		return min_dis_to_line ;
+		return min_dis_to_line*min_dis_to_line ;
 	else
-		return min( norm( X-P ), norm(X-Q) ) ;
+#endif
+	return min((X-P).dot(X-P), (X-Q).dot(X-Q));
+//	return min( norm( X-P ), norm(X-Q) ) ;
 }

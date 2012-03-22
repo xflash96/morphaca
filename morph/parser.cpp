@@ -88,22 +88,22 @@ int ParseLine( Mat &lines, char *filename )
 	}
 	fclose(fp) ;
 
-	lines = Mat( n_line+1, 2, CV_32FC2 ) ;
+	lines = Mat( 2, n_line+1, CV_32FC2 ) ;
 	for( int i=0, j=0 ; i<n_point ; i++ )
 	{
 		if( idx[i] != to[i] )
 		{
-			( lines.at<Vec2f>( j, 0 ) ).val[0] = x[i] ;
-			( lines.at<Vec2f>( j, 0 ) ).val[1] = y[i] ;
-			( lines.at<Vec2f>( j, 1 ) ).val[0] = x[ idx_map[ to[i] ] ] ;
-			( lines.at<Vec2f>( j, 1 ) ).val[1] = y[ idx_map[ to[i] ] ] ;
+			( lines.at<Vec2f>( 0, j ) ).val[0] = x[i] ;
+			( lines.at<Vec2f>( 0, j ) ).val[1] = y[i] ;
+			( lines.at<Vec2f>( 1, j ) ).val[0] = x[ idx_map[ to[i] ] ] ;
+			( lines.at<Vec2f>( 1, j ) ).val[1] = y[ idx_map[ to[i] ] ] ;
 			j++ ;
 		}
 	}
-	( lines.at<Vec2f>( n_line, 0 ) ).val[0] = PI*1e-3 ;
-	( lines.at<Vec2f>( n_line, 0 ) ).val[1] = 0.5-1e-4 ;
-	( lines.at<Vec2f>( n_line, 1 ) ).val[0] = PI*1e-3 ;
-	( lines.at<Vec2f>( n_line, 1 ) ).val[1] = 0.5+1e-4 ;
+	( lines.at<Vec2f>( 0, n_line ) ).val[0] = PI*1e-3 ;
+	( lines.at<Vec2f>( 0, n_line ) ).val[1] = 0.5-1e-4 ;
+	( lines.at<Vec2f>( 1, n_line ) ).val[0] = PI*1e-3 ;
+	( lines.at<Vec2f>( 1, n_line ) ).val[1] = 0.5+1e-4 ;
 	delete x ;
 	delete y ;
 	delete idx ;
