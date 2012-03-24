@@ -1,6 +1,6 @@
 *.pyc
 *.log
 *.*~
-*.o
+*.*.o
 fextr/fextr
 morph/morph
