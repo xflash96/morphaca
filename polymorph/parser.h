@@ -9,14 +9,14 @@ class PARA
 public:
 	PARA() ;
 
-	double T ;
+	int N ;
 	double warp_p ;
 	double warp_a ;
 	double warp_b ;
-	Mat src_lines ;
-	Mat dst_lines ;
+	Mat *lines ;
+	double *weight ;
 } ;
 
-bool ParseParameters( Mat &img_src, Mat &img_dst, PARA &para,  int argc, char *argv[] ) ;
+bool ParseParameters( Mat* &imgs, PARA &para, int argc, char *argv[] ) ; 
 int ParseLine( Mat &lines, char *filename ) ;
 #endif

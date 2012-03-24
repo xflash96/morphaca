@@ -14,7 +14,7 @@ PARA::PARA()
 	warp_b = 1 ;
 }
 
-bool ParseParameters( Mat &(*imgs), PARA &para, int argc, char *argv[] ) 
+bool ParseParameters( Mat* &imgs, PARA &para, int argc, char *argv[] )  
 {
 	Mat raw_img ;
 	double total_w ;
@@ -22,23 +22,22 @@ bool ParseParameters( Mat &(*imgs), PARA &para, int argc, char *argv[] )
 
 	para = PARA() ;
 	para.N = atoi( argv[1] ) ;
-	if( argc < 2*N+2 )
+	if( argc < 2*para.N+2 )
 		return 0 ;
 
-	imgs = new Mat[N] ;
-	para.weight = new double[N] ;
-	para.lines = new Mat[N]
-	check_count = new int[N] ;
+	imgs = new Mat[ para.N] ;
+	para.weight = new double[ para.N] ;
+	para.lines = new Mat[ para.N] ;
+	check_count = new int[ para.N] ;
 
 	for( int i=0 ; i<para.N ; i++ )
 	{
-		raw_img = imread( argv[i+1], 1) ;
+		raw_img = imread( argv[i+2], 1) ;
 		if( raw_img.empty() )
 			return 0 ;
 		raw_img.convertTo( imgs[i], CV_32FC3, 1/255.0 ) ;
 		para.weight[i] = 1 ;
-		para.lines[i] = Mat
-		check_count[i] = ParseLine( para.lines[i], argv[i+N+1] ) ;
+		check_count[i] = ParseLine( para.lines[i], argv[i+para.N+2] ) ;
 		if( check_count == 0 )
 			return 0 ;
 	}
@@ -46,11 +45,9 @@ bool ParseParameters( Mat &(*imgs), PARA &para, int argc, char *argv[] )
 		if( check_count[i] != check_count[i+1] )
 			return 0 ;
 
-	for( int i=2*N+1 ; i<argc ; i+=2 )
+	for( int i=2*para.N+1 ; i<argc ; i+=2 )
 	{
-		if( !strcmp( "-T", argv[i] ) )
-			para.T = (double)( atoi( argv[i+1] ) ) ;
-		else if( !strcmp( "-a", argv[i] ) )
+		if( !strcmp( "-a", argv[i] ) )
 			para.warp_a = atof( argv[i+1] ) ;
 		else if( !strcmp( "-b", argv[i] ) )
 			para.warp_b = atof( argv[i+1] ) ;
