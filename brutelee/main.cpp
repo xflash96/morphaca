@@ -18,9 +18,9 @@ void drawFeature(const Mat &ctrl_points, int side_n, Mat &out_img, int special);
 void MakeDirection(Mat &direction, int n_dir, double unit);
 
 inline void WrapToLine( Mat &morph, Mat &W, Mat &img_src, Vec2f P, Vec2f Q, Vec2f _P, Vec2f _Q, int rows, int cols, int sign);
-void Normalize(Mat &result, Mat &morph, Mat &W );
+inline void Normalize(Mat &result, Mat &morph, Mat &W );
 
-Qfloat SumDiffMat(Mat &A, Mat &B);
+inline Qfloat SumDiffMat(Mat &A, Mat &B);
 
 Mat SearchWraps( Mat &direction, Mat &img_src, Mat &img_dst, Mat &ctrl_points, int rows, int cols, int side_n) ;
 inline Qfloat countDisToSegment( Vec2f P, Vec2f Q, Vec2f X, Qfloat min_dis_to_line ) ;
@@ -37,14 +37,14 @@ int main( int argc, char *argv[] )
 	raw_img_src.convertTo( img_src, CV_32FC3, 1/255.0 ) ;
 	raw_img_dst.convertTo( img_dst, CV_32FC3, 1/255.0 ) ;
 
-	int side_n = 16;
+	int side_n = 14;
 	Mat direction;
 	MakeFeature(ctrl_points, side_n);
-	MakeDirection(direction, 4, 1./side_n/6);
+	MakeDirection(direction, 4, 1./side_n/4);
 	
 	time_t st = time(0);
 
-	int T = 10;
+	int T = 20;
  	for( int t = 0 ; t <= T ; t++ )
 	{
 		Mat diff = SearchWraps( direction, img_src, img_dst, ctrl_points,
@@ -86,8 +86,8 @@ void drawFeature(Mat &ctrl_points, int side_n, Mat &out_img, int special=-1)
 				else
 					color = normal_color;
 				drawLine(out_img, 
-						ctrl_points.at<Vec2f>(0, idx),
-						ctrl_points.at<Vec2f>(0, idx+1),
+						ctrl_points.at<Vec2f>(1, idx),
+						ctrl_points.at<Vec2f>(1, idx+1),
 						color);
 			}
 			if( i+1<side_n ){
@@ -96,8 +96,8 @@ void drawFeature(Mat &ctrl_points, int side_n, Mat &out_img, int special=-1)
 				else
 					color = normal_color;
 				drawLine(out_img, 
-						ctrl_points.at<Vec2f>(0, idx),
-						ctrl_points.at<Vec2f>(0, idx+side_n),
+						ctrl_points.at<Vec2f>(1, idx),
+						ctrl_points.at<Vec2f>(1, idx+side_n),
 						color);
 			}
 		}
@@ -114,8 +114,15 @@ void MakeFeature(Mat &ctrl_points, int side_n)
 	for(int i=0; i<side_n; i++){
 		for(int j=0; j<side_n; j++){
 			int idx = (side_n*i+j);
-			ctrl_points_0[idx] = Vec2f(i*unit, j*unit);
-			ctrl_points_1[idx] = Vec2f(i*unit, j*unit);
+			Vec2f pt;
+			if(j==0)
+				pt = Vec2f(i*unit, 0);
+			else if(j==side_n-1)
+				pt = Vec2f(i*unit, 1);
+			else
+				pt = Vec2f(i*unit, 0.25+j*unit/2);
+			ctrl_points_0[idx] = pt;
+			ctrl_points_1[idx] = pt;
 		}
 	}
 }
@@ -148,31 +155,36 @@ void MakeDirection(Mat &direction, int n_dir, double unit)
  *           |
  *           idx+n
  */
-void WrapToNeighborLine(Mat &morph, Mat &W, Mat &img_src, Mat &ctrl_points, Vec2f _P, int rows, int cols, int side_n, int i, int j, int sign)
+inline float WrapToNeighborLine(Mat &morph, Mat &W, Mat &img_src, Mat &ctrl_points, Vec2f P, int rows, int cols, int side_n, int i, int j, int sign)
 {
 	int idx = i*side_n+j;
+	int n_neigibors = 4;
+	int neighbors[][3] = {{-1,0,-side_n}, {1,0,side_n}, {0,-1,-1}, {0,1,1}};
 
-	Vec2f P = ctrl_points.at<Vec2f>(1,idx);
-	if( i-1>=0 ){
-		Vec2f _U = ctrl_points.at<Vec2f>(0,idx-side_n);
-		Vec2f U = ctrl_points.at<Vec2f>(1,idx-side_n);
-		WrapToLine(morph, W, img_src, U, P, _U, _P, rows, cols, sign);
+	float dots, adist = 0., ldist = 0., PQ, _PQ;
+
+	Vec2f _P = ctrl_points.at<Vec2f>(0,idx);
+	for( int nb=0; nb<n_neigibors; nb++ ){
+		int di=neighbors[nb][0], dj=neighbors[nb][1], offset=neighbors[nb][2];
+		if( i+di>=0 && i+di<side_n && j+dj>=0 && j+dj<side_n ){
+			Vec2f _Q = ctrl_points.at<Vec2f>(0,idx-offset);
+			Vec2f Q = ctrl_points.at<Vec2f>(1,idx-offset);
+			WrapToLine(morph, W, img_src, Q, P, _Q, _P, rows, cols, sign);
+			dots = (Q-P).dot(_Q-_P);
+			PQ = (P-Q).dot(P-Q);
+			_PQ = (_P-_Q).dot(_P-_Q);
+			if(dots < 0)
+				adist += 1/EPSILON;
+			else
+				adist += 1/dots;
+			ldist += abs(PQ-_PQ);
+		}
 	}
-	if( i+1<side_n ){
-		Vec2f _D = ctrl_points.at<Vec2f>(0,idx+side_n);
-		Vec2f D = ctrl_points.at<Vec2f>(1,idx+side_n);
-		WrapToLine(morph, W, img_src, P, D, _P, _D, rows, cols, sign);
-	}
-	if( j-1>=0 ){
-		Vec2f _L = ctrl_points.at<Vec2f>(0,idx-1);
-		Vec2f L = ctrl_points.at<Vec2f>(1,idx-1);
-		WrapToLine(morph, W, img_src, L, P, _L, _P, rows, cols, sign);
-	}
-	if( j+1<side_n ){
-		Vec2f _R = ctrl_points.at<Vec2f>(0,idx+1);
-		Vec2f R = ctrl_points.at<Vec2f>(1,idx+1);
-		WrapToLine(morph, W, img_src, P, R, _P, _R, rows, cols, sign);
-	}
+	return 0;
+	adist *= 1;
+	ldist *= 1e4;
+	fprintf(stderr, "a %f, l%f\n", adist, ldist);
+	return adist + ldist;
 }
 
 void WrapToAllLine(Mat &morph, Mat &W, Mat &img_src, Mat &ctrl_points, int rows, int cols, int side_n)
@@ -183,8 +195,8 @@ void WrapToAllLine(Mat &morph, Mat &W, Mat &img_src, Mat &ctrl_points, int rows,
 	for( int i=0; i<side_n; i++ ){
 		for( int j=0; j<side_n; j++){
 			int idx = i*side_n+j;
-			Vec2f P = ctrl_points.at<Vec2f>(1,idx);
 			Vec2f _P = ctrl_points.at<Vec2f>(0,idx);
+			Vec2f P = ctrl_points.at<Vec2f>(1,idx);
 			if( j+1<side_n){
 				Vec2f _R = ctrl_points.at<Vec2f>(0,idx+1);
 				Vec2f R = ctrl_points.at<Vec2f>(1,idx+1);
@@ -209,7 +221,10 @@ float SumDiffMat(Mat &A, Mat &B)
 	for( int i=0; i<rows; i++ ){
 		Vec3f *p = d.ptr<Vec3f>(i);
 		for( int j=0; j<cols; j++ ){
-			s += p[j].val[0] + p[j].val[1] + p[j].val[2];
+			float b = p[j].val[0];
+			float g = p[j].val[1];
+			float r = p[j].val[2];
+			s += b*b + g*g + r*r;
 		}
 	}
 	return s;
@@ -218,59 +233,69 @@ float SumDiffMat(Mat &A, Mat &B)
 Mat SearchWraps( Mat &direction, Mat &img_src, Mat &img_dst, Mat &ctrl_points, int rows, int cols, int side_n)
 {
 
-	Mat morph, _morph, W, _W, norm_morph;
+	Mat morph, _morph, W, _W, norm_morph, min_morph, min_W, empty_morph, empty_W;
 	float min_diff;
+	Vec2f min_d;
 
 	_morph = Mat::zeros(img_dst.rows, img_dst.cols, CV_32FC3);
 	norm_morph = Mat::zeros(img_dst.rows, img_dst.cols, CV_32FC3);
+	min_morph = Mat::zeros(img_dst.rows, img_dst.cols, CV_32FC3);
+	empty_morph = Mat::zeros(img_dst.rows, img_dst.cols, CV_32FC3);
 	_W = Mat::zeros(img_dst.rows, img_dst.cols, CV_32FC1);
+	min_W = Mat::zeros(img_dst.rows, img_dst.cols, CV_32FC1);
+	empty_W = Mat::zeros(img_dst.rows, img_dst.cols, CV_32FC1);
 
 	int n_directions = direction.cols;
 
 	WrapToAllLine(morph, W, img_src, ctrl_points, rows, cols, side_n);
 	min_diff = 1e10;
 
-	for( int i=0; i<side_n; i++ ){
-	for( int j=0; j<side_n; j++ ){
+	for( int i=1; i<side_n-1; i++ ){
+	for( int j=1; j<side_n-1; j++ ){
 		int l = i*side_n+j;
-		Vec2f _P = ctrl_points.at<Vec2f>(0, l);
+		Vec2f P = ctrl_points.at<Vec2f>(1, l);
+		min_d = Vec2f(0, 0);
+		morph.copyTo(min_morph);
+		morph.copyTo(empty_morph);
+		W.copyTo(empty_W);
+		W.copyTo(min_W);
+		WrapToNeighborLine( empty_morph, empty_W, img_src, ctrl_points, P, rows, cols, side_n, i, j, -1);
 		for( int k=0; k<n_directions; k++){
 			Vec2f d = direction.at<Vec2f>(0,k);
-			Vec2f t = _P+d;
+			Vec2f t = P+d;
 			if(t.val[0] < 0 || t.val[1] < 0 || t.val[0] >= 1. || t.val[1] >= 1.)
 				continue;
-			morph.copyTo(_morph);
-			W.copyTo(_W);
+			empty_morph.copyTo(_morph);
+			empty_W.copyTo(_W);
 
-			WrapToNeighborLine( _morph, _W, img_src, ctrl_points, _P, rows, cols, side_n, i, j, -1);
-			WrapToNeighborLine( _morph, _W, img_src, ctrl_points, _P+d, rows, cols, side_n, i, j, +1);
-			imshow("W", _W);
-			waitKey();
+			float cost = WrapToNeighborLine( _morph, _W, img_src, ctrl_points, P+d, rows, cols, side_n, i, j, +1);
 			Normalize(norm_morph, _morph, _W);
 
 
-			float diff_now = SumDiffMat(norm_morph, img_dst);
-			fprintf(stderr, "now=%f min=%f\n", diff_now, min_diff);
-				drawFeature(ctrl_points, side_n, norm_morph, l);
+			float diff_now = SumDiffMat(norm_morph, img_dst) + cost;
 			if( diff_now < min_diff ){
-				_morph.copyTo(morph);
-				_W.copyTo(W);
-				ctrl_points.at<Vec2f>(0,l) = _P+d;
-				_P = _P+d;
+				imshow("W", _W);
+				_morph.copyTo(min_morph);
+				_W.copyTo(min_W);
+				min_d = d;
+				min_diff = diff_now;
 
 				fprintf(stderr, "l = %d d = %f %f\n", l, d.val[0], d.val[1]);
-				min_diff = diff_now;
-#if 1
-				imshow("morph", norm_morph);
-				norm_morph = abs(norm_morph-img_dst);
-				drawFeature(ctrl_points, side_n, norm_morph, l);
-				imshow("diff", norm_morph);
-				waitKey(100);
-#endif
+				fprintf(stderr, "now=%f min=%f cost=%f\n", diff_now, min_diff, cost);
 				break;
 			}
 		}
+		min_morph.copyTo(morph);
+		min_W.copyTo(W);
+		ctrl_points.at<Vec2f>(1,l) += min_d;
 	}
+#if 1
+	drawFeature(ctrl_points, side_n, norm_morph, -1);
+	imshow("morph", norm_morph);
+	norm_morph = abs(norm_morph-img_dst);
+	imshow("diff", norm_morph);
+	waitKey(100);
+#endif
 	}
 	return morph;
 }
@@ -328,9 +353,15 @@ void WrapToLine( Mat& morph, Mat &W, Mat &img_src, Vec2f P, Vec2f Q, Vec2f _P, V
 					w = 1/EPSILON;
 				else
 					w = 1/dist;
+				w *= 1;
 				pixel = img_src.at<Vec3f>(_x, _y);
-				morph_i[j] += w*pixel*sign ; 
-				W_i[j] += w*sign ;
+				if(sign>0){
+					morph_i[j] += w*pixel; 
+					W_i[j] += w;
+				}else{
+					morph_i[j] += -w*pixel; 
+					W_i[j] += -w;
+				}
 			}
 		}
 	}

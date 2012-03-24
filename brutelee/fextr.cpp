@@ -56,8 +56,8 @@ int main(int argc, char** argv)
 	string src_image_name = argv[1];
 	string dst_image_name = argv[2];
 #else
-	string src_image_name = "/home/will/Downloads/imm/01-2m.jpg";
-	string dst_image_name = "/home/will/Downloads/imm/04-1m.jpg";
+	string src_image_name = "../morph/imm/01-1m.jpg";
+	string dst_image_name = "../morph/imm/03-1m.jpg";
 #endif
 
 	Mat src_image = imread(src_image_name);

@@ -4,3 +4,6 @@
 *.o
 fextr/fextr
 morph/morph
+morph/imm
+*.png
+brutelee/imm
