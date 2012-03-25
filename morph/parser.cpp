@@ -12,6 +12,7 @@ PARA::PARA()
 	warp_p = 0 ;
 	warp_a = 0.1 ;
 	warp_b = 1 ;
+	type = 0 ;
 }
 
 bool ParseParameters( Mat &img_src, Mat &img_dst, PARA &para,  int argc, char *argv[] ) 
@@ -37,6 +38,8 @@ bool ParseParameters( Mat &img_src, Mat &img_dst, PARA &para,  int argc, char *a
 			para.warp_b = atof( argv[i+1] ) ;
 		else if( !strcmp( "-p", argv[i] ) )
 			para.warp_p = atof( argv[i+1] ) ;
+		else if( !strcmp( "-t", argv[i] ) )
+			para.type = atof( argv[i+1] ) ;
 		else if( !strcmp( "-SL", argv[i] ) )
 			check_count[0] = ParseLine( para.src_lines, argv[i+1] ) ;
 		else if( !strcmp( "-DL", argv[i] ) )

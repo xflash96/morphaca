@@ -24,6 +24,10 @@ int main( int argc, char *argv[] )
 		cerr << "\n" ;
 		cerr << "Usage: ./morph <src image> <dst image> <parameters>\n" ;
 		cerr << "-T	The steps during the morphing.\n" ;
+		cerr << "-t	The type of interpolation.(Default is 0)\n" ;
+		cerr << "        0: Direct interpolation.\n" ;
+		cerr << "        1: Bilinear interpolation.\n" ;
+		cerr << "        2: Gaussian interpolation.\n" ;
 		cerr << "-SL	The lines of src image(Required)\n" ;
 		cerr << "-DL	The lines of dst image(Required)\n" ;
 		cerr << "-a	Parameter a of warpping\n" ;

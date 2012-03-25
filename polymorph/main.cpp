@@ -24,6 +24,10 @@ int main( int argc, char *argv[] )
 	{
 		cerr << "\n" ;
 		cerr << "Usage: ./polymorph <#imgs> <img1>...<imgN> <line1>...<lineN> <parameters>\n" ;
+		cerr << "-t	The type of interpolation.(Default is 0)\n" ;
+		cerr << "        0: Direct interpolation.\n" ;
+		cerr << "        1: Bilinear interpolation.\n" ;
+		cerr << "        2: Gaussian interpolation.\n" ;
 		cerr << "-a	Parameter a of warpping\n" ;
 		cerr << "-b	Parameter b of warpping\n" ;
 		cerr << "-p	Parameter p of warpping\n" ;

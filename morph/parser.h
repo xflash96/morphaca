@@ -9,6 +9,7 @@ class PARA
 public:
 	PARA() ;
 
+	int type ;
 	double T ;
 	double warp_p ;
 	double warp_a ;

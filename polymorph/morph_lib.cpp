@@ -79,7 +79,12 @@ Mat Warping( Mat &img_src, PARA &para, Mat line_src, Mat line_dst, int rows, int
 				if(_x>=0 && _y>=0 && _x<img_src.rows && _y<img_src.cols)
 				{
 					w = 1/( countDisToSegment( P, Q, X, abs(v) ) );
-					pixel = img_src.at<Vec3f>(_x, _y);
+					if( para.type == 0 )
+						pixel = img_src.at<Vec3f>(_x, _y);
+					else if( para.type == 1 )
+						pixel = BilinearInterpolation( img_src, _X.val[0], _X.val[1], 1 );
+					else if( para.type == 2 )
+						pixel = GaussianKernelInterpolation( img_src, _X.val[0], _X.val[1], 1 );
 					morph_i[j] += w*pixel ; 
 					W_i[j] += w ;
 				}
@@ -90,6 +95,35 @@ Mat Warping( Mat &img_src, PARA &para, Mat line_src, Mat line_dst, int rows, int
 		for( int j=0; j<cols; j++)
 			morph.at<Vec3f>(i, j) = 1/W.at<float>(i,j)*morph.at<Vec3f>(i, j) ;
 	return morph ;
+}
+
+Vec3f BilinearInterpolation( Mat &img_src, Qfloat x, Qfloat y, Qfloat sigma )
+{
+	Qfloat a, b, w, W  ;
+	int quan_x, quan_y ;
+	Vec3f pixel = Vec3f(0, 0, 0) ;
+	W = 0 ;
+	a = 1-x+int(x) ;
+	b = 1-y+int(y) ;
+	for( int i=0 ; i<=1 ; i++, a=1-a )
+		for( int j=0 ; j<=1 ; j++, b=1-b )
+		{
+			quan_x = int( x+i+1e-7 ) ;
+			quan_y = int( y+j+1e-7 ) ;
+			if(quan_x<0 || quan_y<0 || quan_x>=img_src.rows || quan_y>=img_src.cols)
+				continue ;
+			w = a*b ;
+			if( w>1e-7 )
+			{
+				pixel = pixel+w*img_src.at<Vec3f>(quan_x, quan_y) ;
+				W += w ;
+			}
+		}
+	if( W < 1e-7 )
+		pixel = Vec3f(-1, -1, -1) ;
+	else
+		pixel = 1/W*pixel ;
+	return pixel ;
 }
 
 Vec3f GaussianInterpolation( Mat &img_src, Qfloat x, Qfloat y, Qfloat sigma )
@@ -117,8 +151,8 @@ Vec3f GaussianInterpolation( Mat &img_src, Qfloat x, Qfloat y, Qfloat sigma )
 				pixel = pixel+w*img_src.at<Vec3f>(quan_x, quan_y) ;
 			}
 		}
-	if( abs( W ) < 1e-7 )
-		Vec3f pixel = Vec3f(-1, -1, -1) ;
+	if( W < 1e-7 )
+		pixel = Vec3f(-1, -1, -1) ;
 	else
 		pixel = 1/W*pixel ;
 	return pixel ;
@@ -132,15 +166,9 @@ Qfloat _GaussianKernel[] = {
 	0.032747176537766653, 0.146762663173739930, 0.24197072451914337, 0.146762663173739930, 0.032747176537766653,
 	0.007306882745280776, 0.032747176537766653, 0.05399096651318806, 0.032747176537766653, 0.007306882745280776,
 };
+
 Vec3f GaussianKernelInterpolation( Mat &img_src, Qfloat x, Qfloat y, Qfloat sigma )
 {
-#if 1
-	int _x = (int)x, _y = (int)y;
-	if(_x<0 || _y<0 || _x>=img_src.rows || _y>=img_src.cols)
-		return Vec3f(-1, -1, -1);
-	else
-		return img_src.at<Vec3f>(_x, _y);
-#endif
 	Qfloat w, W, dis ;
 	int quan_x, quan_y, rows, cols ;
 	rows = img_src.rows ;
