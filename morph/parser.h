@@ -11,6 +11,7 @@ public:
 
 	int type ;
 	double T ;
+	int N ;
 	double warp_p ;
 	double warp_a ;
 	double warp_b ;
