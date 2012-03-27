@@ -27,6 +27,8 @@ inline Qfloat countDisToSegment( Vec2f P, Vec2f Q, Vec2f X, Qfloat min_dis_to_li
 
 void AlignImage(Mat& aligned_src, Mat& aligned_dst, Mat& src, Mat& dst, Vec2f &trans);
 
+void WriteMesh(Mat& ctrl_points, Vec2f offset, int side_n);
+
 Qfloat const PI=(float)(4*atan(1));
 
 int main( int argc, char *argv[] )
@@ -47,12 +49,14 @@ int main( int argc, char *argv[] )
 	
 	time_t st = time(0);
 	AlignImage( aligned_src, aligned_dst, img_src, img_dst, translation );
+#if 0
 	imshow("src", aligned_src);
 	imshow("dst", aligned_dst);
 	waitKey();
+#endif
  
-	int T = 20;
- 	for( int t = 0 ; t <= T ; t++ )
+	int T = 1;
+ 	for( int t = 0 ; t < T ; t++ )
 	{
 		Mat morph = SearchWraps( direction, aligned_src, aligned_dst, ctrl_points,
 					 aligned_src.rows, aligned_src.cols, side_n);
@@ -60,9 +64,45 @@ int main( int argc, char *argv[] )
 		time_t now = time(0);
 		fprintf(stderr, "t = %d\n", (int)(now-st));
 	}
-
+	WriteMesh(ctrl_points, translation, side_n);
 
 	return 0;
+}
+
+void WriteLine(FILE* fp, Vec2f _P, int id, int to)
+{
+	fprintf(fp, "0 0 %f %f %d 0 %d\n", _P.val[0], _P.val[1], id, to);
+}
+void WriteMesh(Mat& ctrl_points, Vec2f offset, int side_n)
+{
+	FILE *fsrc = fopen("src.asf", "w");
+	FILE *fdst = fopen("dst.asf", "w");
+
+	fprintf(fsrc, "%d\n", 2*side_n*(side_n-1));
+	fprintf(fdst, "%d\n", 2*side_n*(side_n-1));
+	int extidx = side_n*side_n;
+	for(int i=0; i<side_n; i++){
+	for(int j=0; j<side_n; j++){
+		int idx = i*side_n+j;
+		int existed = 0;
+		Vec2f _P = ctrl_points.at<Vec2f>(0,idx);
+		Vec2f P = ctrl_points.at<Vec2f>(1,idx);
+		if( j+1<side_n){
+			WriteLine(fdst, P-offset, idx, idx+1);
+			WriteLine(fsrc, _P-offset, idx, idx+1);
+			existed = 1;
+		}
+		if( i+1<side_n ){
+			int tidx=idx;
+			if(existed)
+				tidx =extidx++; 
+			WriteLine(fdst, P-offset, tidx, idx+side_n);
+			WriteLine(fsrc, _P-offset, tidx, idx+side_n);
+		}
+	}
+	}
+	fclose(fsrc);
+	fclose(fdst);
 }
 void AlignImage( Mat& aligned_src, Mat& aligned_dst, Mat& img_src, Mat& img_dst, Vec2f& translation )
 {
@@ -90,7 +130,7 @@ void AlignImage( Mat& aligned_src, Mat& aligned_dst, Mat& img_src, Mat& img_dst,
 			if( diff < min_diff ){
 				aligned_src = src;
 				aligned_dst = dst;
-				translation = Vec2f(di, dj);
+				translation = Vec2f(dj/img_src.cols, di/img_src.rows);
 				min_diff = diff;
 				fprintf(stderr, "di = %d, dj = %d\n", di, dj);
 			}
@@ -198,6 +238,8 @@ void MakeDirection(Mat &direction, int n_dir, double unit)
 inline float WrapToNeighborLine(Mat &morph, Mat &W, Mat &img_src, Mat &ctrl_points, Vec2f P, int rows, int cols, int side_n, int i, int j, int sign)
 {
 	int idx = i*side_n+j;
+
+	float dots, adist = 0., ldist = 0., PQ, _PQ;
 #if 1
 	int n_neigibors = 4;
 	int neighbors[][3] = {{-1,0,-side_n}, {1,0,side_n}, {0,-1,-1}, {0,1,1}};
@@ -206,8 +248,6 @@ inline float WrapToNeighborLine(Mat &morph, Mat &W, Mat &img_src, Mat &ctrl_poin
 	int neighbors[][3] = {{-1,0,-side_n}, {1,0,side_n}, {0,-1,-1}, {0,1,1},
 		{1,1,side_n+1}};
 #endif
-
-	float dots, adist = 0., ldist = 0., PQ, _PQ;
 
 	Vec2f _P = ctrl_points.at<Vec2f>(0,idx);
 	for( int nb=0; nb<n_neigibors; nb++ ){
@@ -393,7 +433,6 @@ void WrapToLine( Mat& morph, Mat &W, Mat &img_src, Vec2f P, Vec2f Q, Vec2f _P, V
 
 			u = (X-P).dot( u_param ) ;
 			v = (X-P).dot( v_param ) ;
-			float dist = countDisToSegment( P, Q, X, abs(v) );
 
 			_X = _P + u*(_QmP) + v*x_param ;
 
