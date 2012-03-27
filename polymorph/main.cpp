@@ -54,11 +54,11 @@ int main( int argc, char *argv[] )
 	}
 	char s[50] ;
 	if( para.type == 0 )
-		sprintf( s, "./direct_poly.png" ) ;
+		sprintf( s, "./poly_direct.png" ) ;
 	else if( para.type == 1 )
-		sprintf( s, "./bilinear_poly.png" ) ;
+		sprintf( s, "./poly_bilinear.png" ) ;
 	else if( para.type == 2 )
-		sprintf( s, "./gaussian_poly.png" ) ;
+		sprintf( s, "./poly_gaussian.png" ) ;
 	imwrite( s, 255*morph ) ;
 
 	return 0;
