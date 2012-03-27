@@ -12,4 +12,4 @@ parser.o: parser.h parser.cpp
 morph_lib.o: morph_lib.h morph_lib.cpp
 	${CC} morph_lib.cpp ${CPPLAGS} ${LDFLAGS} -c
 clean:
-	rm -f morph *.o
+	rm -f polymorph *.o

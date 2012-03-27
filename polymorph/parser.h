@@ -10,6 +10,7 @@ public:
 	PARA() ;
 
 	int N ;
+	int type ;
 	double warp_p ;
 	double warp_a ;
 	double warp_b ;
