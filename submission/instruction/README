@@ -1,0 +1,19 @@
+Our program can run on R217 workstation, we're not sure whether it
+can run on other platforms, sorry for inconvenience.
+
+How to test
+1. For testing direct morphing, type
+	make direct
+2. For testing bilinear morphing, type
+	make bilinear
+3. For testing gaussian morphing(need to wait), type
+	make gaussian
+4. For testing polymorphing(need to wait), type
+	make poly
+
+The results are put in ./test/result
+For 2 image morphing, each test will generare a sequence of images.
+For polymorphing, it will generate 3 images representing 3 different interpolation methods respectively.
+Other details please check with 
+	../program/morphaca/morph/morph
+	../program/morphaca/polymorph/polymorph

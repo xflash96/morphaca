@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=$(shell pkg-config opencv --cflags) -g -Wall -Wconversion  -O3
+CFLAGS=$(shell pkg-config opencv --cflags) -g -Wall -Wconversion 
 CPPFLAGS=$(CFLAGS)
 LDFLAGS=$(shell pkg-config opencv --libs) -lm -O3
 
