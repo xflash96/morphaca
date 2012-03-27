@@ -226,9 +226,8 @@ inline float WrapToNeighborLine(Mat &morph, Mat &W, Mat &img_src, Mat &ctrl_poin
 			ldist += abs(PQ-_PQ);
 		}
 	}
-	return 0;
-	adist *= 1;
-	ldist *= 1e4;
+	adist *= 1e-3;
+	ldist *= 1e3;
 	fprintf(stderr, "a %f, l%f\n", adist, ldist);
 	return adist + ldist;
 }
@@ -395,8 +394,6 @@ void WrapToLine( Mat& morph, Mat &W, Mat &img_src, Vec2f P, Vec2f Q, Vec2f _P, V
 			u = (X-P).dot( u_param ) ;
 			v = (X-P).dot( v_param ) ;
 			float dist = countDisToSegment( P, Q, X, abs(v) );
-			if(dist > 700)
-				continue;
 
 			_X = _P + u*(_QmP) + v*x_param ;
 

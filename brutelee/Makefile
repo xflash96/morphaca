@@ -10,4 +10,4 @@ main.o: main.cpp
 clean:
 	rm -f brutelee *.o
 install:
-	./brutelee imm/06-1m.jpg imm/09-1m.jpg -SL imm/02-1m.asf -DL imm/03-1m.asf -T 10
+	./brutelee imm/09-1m.jpg imm/06-1m.jpg -SL imm/02-1m.asf -DL imm/03-1m.asf -T 10
