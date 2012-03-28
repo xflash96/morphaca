@@ -10,10 +10,13 @@ How to test
 	make gaussian
 4. For testing polymorphing(need to wait), type
 	make poly
+5. For testing auto morphing(animation), type
+	make auto
 
 The results are put in ./test/result
 For 2 image morphing, each test will generare a sequence of images.
 For polymorphing, it will generate 3 images representing 3 different interpolation methods respectively.
+For auto morphing, it will generate two feature file src.asf, dst.asf, and a cross-dissolving picture auto.jpg
 Other details please check with 
 	../program/morphaca/morph/morph
 	../program/morphaca/polymorph/polymorph
