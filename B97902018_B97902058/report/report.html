@@ -1,0 +1,334 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!-- saved from url=(0028)http://powei.tw/morph#report -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta charset="utf-8">
+    <title>Morphaca</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <!-- Le debugs
+    <meta http-equiv="cache-control" content="no-cache">
+    -->
+
+    <!-- Le styles -->
+    <link href="http://powei.tw/static/css/bootstrap.css" rel="stylesheet">
+    <style>
+      body {
+        padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
+      }
+    </style>
+    <link href="http://powei.tw/static/css/bootstrap-responsive.css" rel="stylesheet">
+    <link href="http://powei.tw/static/css/prettify.css" rel="stylesheet">
+
+    <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!-- Le fav and touch icons -->
+    <link rel="shortcut icon" href="http://powei.tw/static/ico/favicon.ico">
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="http://powei.tw/static/ico/apple-touch-icon-114-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="72x72" href="http://powei.tw/static/ico/apple-touch-icon-72-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" href="http://powei.tw/static/ico/apple-touch-icon-57-precomposed.png">
+  </head>
+
+  <body>
+
+    <div class="navbar navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container">
+          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </a>
+          <a class="brand" href="http://powei.tw/morph#">Morphaca</a>
+          <div class="nav-collapse">
+            <ul class="nav">
+              <li><a href="http://powei.tw/morph#">Home</a></li>
+              <li><a href="http://powei.tw/morph#upload">Upload</a></li>
+              <li><a href="./Morphaca_files/Morphaca.html">Report</a></li>
+              <li><a href="http://powei.tw/morph#contact">Contact</a></li>
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+        <div id="content">
+        <div class="row" id="wiki"><h2>Introduction</h2><p>In this homework, we implement the tool of morphing in C++ with openCV.
+We implement many kinds of functions. For interpolation part, there are
+direct interpolation, bilinear interpolation and gaussian interpolation.
+We also provide multi-source morphing(polymorphing) and auto-face detection
+morphing.
+</p><p>
+The hierarchy of our source is
+</p><pre class="prettyprint"><span class="pun">./</span><span class="pln">morph
+	main</span><span class="pun">.</span><span class="pln">cpp
+	morph_lib</span><span class="pun">.</span><span class="pln">h
+	morph_lib</span><span class="pun">.</span><span class="pln">cpp
+	parser</span><span class="pun">.</span><span class="pln">h
+	parser</span><span class="pun">.</span><span class="pln">cpp
+	</span><span class="typ">Makefile</span></pre><pre class="prettyprint"><span class="pun">./</span><span class="pln">polymorph
+	main</span><span class="pun">.</span><span class="pln">cpp
+	morph_lib</span><span class="pun">.</span><span class="pln">h
+	morph_lib</span><span class="pun">.</span><span class="pln">cpp
+	parser</span><span class="pun">.</span><span class="pln">h
+	parser</span><span class="pun">.</span><span class="pln">cpp
+	</span><span class="typ">Makefile</span></pre><pre class="prettyprint"><span class="pun">./</span><span class="pln">brutelee
+	main</span><span class="pun">.</span><span class="pln">cpp
+	</span><span class="typ">Makefile</span></pre><p>
+The main.cpp is a demo program, morph_lib.* and parser.* are morphing and
+parsing function respectively.
+</p>
+<h2>Two images morphing</h2><p>The morphing is the combination of warping and cross-dissolving. The later
+part is easy. We implement warping based on Thaddeus Beier, Shawn Neely, 
+Feature-Based Image Metamorphosis, SIGGRAPH 1992. The framework is</p><ol>
+<li> Parse data</li>
+<li> Warp source image</li>
+<li> Warp destination image</li>
+<li> Cross-dissolve the above 2 images</li>
+</ol><ul>
+<li> <code class="prettyprint"><span class="kwd">bool</span><span class="pln"> </span><span class="typ">ParseParameters</span><span class="pun">(</span><span class="pln"> </span><span class="typ">Mat</span><span class="pln"> </span><span class="pun">&amp;</span><span class="pln">img_src</span><span class="pun">,</span><span class="pln"> </span><span class="typ">Mat</span><span class="pln"> </span><span class="pun">&amp;</span><span class="pln">img_dst</span><span class="pun">,</span><span class="pln"> PARA </span><span class="pun">&amp;</span><span class="pln">para</span><span class="pun">,</span><span class="pln"> </span><span class="kwd">int</span><span class="pln"> argc</span><span class="pun">,</span><span class="pln"> </span><span class="kwd">char</span><span class="pln"> </span><span class="pun">*</span><span class="pln">argv</span><span class="pun">[]</span><span class="pln"> </span><span class="pun">)</span><span class="pln"> </span></code>
+We use this function to parse the command line. PARA is a class to represent the related 
+parameters. The return value represents whether the command is legal or not. </li>
+</ul><ul>
+<li> <code class="prettyprint"><span class="kwd">int</span><span class="pln"> </span><span class="typ">ParseLine</span><span class="pun">(</span><span class="pln"> </span><span class="typ">Mat</span><span class="pln"> </span><span class="pun">&amp;</span><span class="pln">lines</span><span class="pun">,</span><span class="pln"> </span><span class="kwd">char</span><span class="pln"> </span><span class="pun">*</span><span class="pln">filename </span><span class="pun">)</span><span class="pln"> </span></code></li>
+</ul><p>
+In ParseParameters, it calls this function to parse the lines used during the morphing.
+The format of line file is as follows:</p><pre class="prettyprint"><span class="pln">&lt;#path&gt;</span><span class="tag">&lt;type&gt;&lt;x&gt;&lt;y&gt;&lt;point</span><span class="pln">#</span><span class="tag">&gt;&lt;conneted</span><span class="pln"> </span><span class="atn">from</span><span class="tag">&gt;&lt;connect</span><span class="pln"> </span><span class="atn">to</span><span class="tag">&gt;</span></pre><p>Since the size betwwen the image may be different, the value of x and y are scaled from
+0 to 1.
+</p><ul>
+<li> <code class="prettyprint"><span class="typ">Mat</span><span class="pln"> </span><span class="typ">Warping</span><span class="pun">(</span><span class="pln"> </span><span class="typ">Mat</span><span class="pln"> </span><span class="pun">&amp;</span><span class="pln">img_src</span><span class="pun">,</span><span class="pln"> PARA </span><span class="pun">&amp;</span><span class="pln">para</span><span class="pun">,</span><span class="pln"> </span><span class="typ">Mat</span><span class="pln"> line_src</span><span class="pun">,</span><span class="pln"> </span><span class="typ">Mat</span><span class="pln"> line_dst</span><span class="pun">,</span><span class="pln"> </span><span class="kwd">int</span><span class="pln"> rows</span><span class="pun">,</span><span class="pln"> </span><span class="kwd">int</span><span class="pln"> cols </span><span class="pun">)</span><span class="pln"> </span></code></li>
+</ul><p>
+Given the corresponding parameters and src/dst images, it will generate the warped image.
+The algorithm we implement is  Feature-Based Image Metamorphosis as in cyy's slide.
+For each pixel, we use the line segment to determin which pixel in the source image
+is corresponding to it.
+</p><ul>
+<li> <code class="prettyprint"><span class="typ">Vec3f</span><span class="pln"> </span><span class="typ">BilinearInterpolation</span><span class="pun">(</span><span class="pln"> </span><span class="typ">Mat</span><span class="pln"> </span><span class="pun">&amp;</span><span class="pln">img_src</span><span class="pun">,</span><span class="pln"> </span><span class="typ">Qfloat</span><span class="pln"> x</span><span class="pun">,</span><span class="pln"> </span><span class="typ">Qfloat</span><span class="pln"> y</span><span class="pun">,</span><span class="pln"> </span><span class="typ">Qfloat</span><span class="pln"> sigma </span><span class="pun">)</span><span class="pln"> </span></code></li>
+</ul><p>
+This function peovide bilinear interpolation, which is used during warping.
+</p><ul>
+<li> <code class="prettyprint"><span class="typ">Vec3f</span><span class="pln"> </span><span class="typ">GaussianInterpolation</span><span class="pun">(</span><span class="pln"> </span><span class="typ">Mat</span><span class="pln"> </span><span class="pun">&amp;</span><span class="pln">img_src</span><span class="pun">,</span><span class="pln"> </span><span class="typ">Qfloat</span><span class="pln"> normal_x</span><span class="pun">,</span><span class="pln"> </span><span class="typ">Qfloat</span><span class="pln"> normal_y</span><span class="pun">,</span><span class="pln"> </span><span class="typ">Qfloat</span><span class="pln"> sigma </span><span class="pun">)</span><span class="pln"> </span></code></li>
+</ul><p>
+This function peovide gaussian interpolation, which is used during warping.
+</p><ul>
+<li> <code class="prettyprint"><span class="typ">Vec3f</span><span class="pln"> </span><span class="typ">GaussianKernelInterpolation</span><span class="pun">(</span><span class="pln"> </span><span class="typ">Mat</span><span class="pln"> </span><span class="pun">&amp;</span><span class="pln">img_src</span><span class="pun">,</span><span class="pln"> </span><span class="typ">Qfloat</span><span class="pln"> normal_x</span><span class="pun">,</span><span class="pln"> </span><span class="typ">Qfloat</span><span class="pln"> normal_y</span><span class="pun">,</span><span class="pln"> </span><span class="typ">Qfloat</span><span class="pln"> sigma </span><span class="pun">)</span><span class="pln"> </span></code></li>
+</ul><p>
+This function peovide optimized gaussian interpolation, which is used during warping, more details
+are in optimization section.
+</p><h2>Other details</h2><ul><li> We also implement the direct interpolation embedded in Warping function.</li>
+<li> To avoid we can not find the corresponding pixel in the source image for the the pixels at surrounded 
+to the boundary in the destination image(outlier). That is, pixel (1,0) may corrspond to (-1,0) in
+the source image. However, (-1,0) doesn't exist since it's out of the range. We add a small segment
+in both source and destination image. Then evry pixel must can find a legal corresponding pixel by
+this segment.</li>
+</ul><h2>Polymorphing (Bonus)</h2><p>We implement the reference paper on the course website 
+"Polymorph: morphing among multiple images", this paper proposed a framework of polymorphing, that 
+is, 
+</p><p>
+<span lang="latex"> <img src="./Morphaca_files/gif.latex" alt="\overline{W_i}(p)=\sum_{j=1}^n b_i^j(p)W_{ij}(p)" border="0" class="latex"> </span><br>
+<span lang="latex"> <img src="./Morphaca_files/gif(1).latex" alt="\overline{I_i}(r)= \overline{W_i}(p)\bullet b_i^j(p)I_i(p)" border="0" class="latex"> </span><br>
+<span lang="latex"> <img src="./Morphaca_files/gif(2).latex" alt="I(r)=\sum_{i=1}^n \overline{I_i}(r)" border="0" class="latex"> </span>
+</p><h2>Auto Face Morphing (Bonus)</h2><p>We read <a href="http://powei.tw/www.springerlink.com/index/H92C5XD5HYHHGKV6.pdf">A work minimization approach to image morphing</a> by <strong>Peisheng et-al</strong>. However, they use bi-spline wrapping, so we have to modify the algorithm do work on feature-based wrapping.
+</p><p>
+In the first trial we tried to put some random features, and brutely adjust each end point. However, the image will be broken due to non-consistency of features. In the second trial we make grids, and generate feature line from the grid. It works well if each feature line doesn't overlapse. To ensure so, we add some regularization on each step. To make the search fast, we have larger grid density in the center. Also, we seperate the weight of each grid to make the result accumulative to all feature lines.
+</p><p>
+<strong>Algorithm</strong></p><ul>
+<li> Align two image by simple translation (search for min euclid distance)</li>
+<li> Generate grid</li>
+<li> Construct First Wrapping</li>
+<li> For each grid:<ul>
+<li> Remove wrapping effect to all neighbor grids</li>
+<li> For each search directions:<ul>
+<li> Move the grid along the direction</li>
+<li> Construct Wrapping to all neighbor grid</li>
+<li> cost = color distance + regularization</li>
+<li> If cost &lt; min_cost do update</li></ul></li></ul></li>
+</ul><table class="table"><tr><th> Weights </th><th> Morphing Result </th><th> Diff </th></tr></table><p><img src="./Morphaca_files/auto-grid.jpg" alt="weight|" style="width: 30%; "> <img src="./Morphaca_files/auto-morph.jpg" alt="result|" style="width: 30%; "> <img src="./Morphaca_files/auto-diff.jpg" alt="diff|" style="width: 30%; ">
+</p>
+<p>Cross Dissolving Result</p>
+<img src="./auto-result.jpg" alt="cross result" style="width: 40%">
+<h2>Optimization</h2><p>Originally, wrapping for one frame takes 5 minutes, which made it less possible to search on features. We made it less then 1 second in the end. The optimization is listed below:</p><table class="table"><tr><th> Action </th><th> Result (time per frame) </th></tr><tr><td> Pre-calc Gauss Function </td><td> <strong>5 min</strong> to 36 sec </td></tr><tr><td> Change Gauss function to Direct Map </td><td> 36 sec to 12 sec </td></tr><tr><td> Inline Distance Function </td><td> Effects later </td></tr><tr><td> For Loop Inversion (put feature loop outside) </td><td> 12 to 2 sec </td></tr><tr><td> Use 2 norm in Distance Function ( exclude sqrt ) </td><td> 2 to <strong>less than 1 sec</strong> </td></tr><tr><td> Row-wise Index on Mat </td><td> OpenCV seems had done this for us </td></tr></table><h2>Comparison of Results</h2><p>The comparisons are based on these 3 images.
+</p><p>
+<img src="./Morphaca_files/01-1m.jpg" alt="img1 |" style="width: 30%; "> <img src="./Morphaca_files/01-1m.jpg" alt="img2 |" style="width: 30%; "> <img src="./Morphaca_files/01-1m.jpg" alt="img3 |" style="width: 30%; ">
+</p><h3>Different interpolation</h3><p>Morph img1 and img2
+</p><p>
+<img src="./Morphaca_files/direct.jpg" alt="Direct |" style="width: 30%; "> <img src="./Morphaca_files/bilinear.jpg" alt="Bilinear |" style="width: 30%; "> <img src="./Morphaca_files/gaussian.jpg" alt="Gaussian |" style="width: 30%; ">
+</p><p>
+We can find the level of blured is gaussian&gt;bilinear&gt;direct interpolation. It's reasonable because
+gaussian interpolation takes more surrounding pixels to do weighted average.(We set sigma = 1) 
+and bilinear takes surrounding 4 pixels to average. 
+The execution time is
+</p><table class="table"><tr><td>Direct </td><td> Bilinear </td><td> Gaussian </td></tr><tr><td> 1.079s </td><td> 2.180s </td><td> 6.841s </td></tr></table><h3>Polymorphing</h3><p>We warp img1, img2 and img3.
+</p><p>
+<img src="./01-1m.jpg" alt="img1 |" style="width: 30%; "> <img src="./06-1m.jpg" alt="img2 |" style="width: 30%; "> <img src="./07-1m.jpg" alt="img3 |" style="width: 30%; ">
+</p><p>
+The previos 2 image morphing are the above 3 images.
+</p><p>
+The polymorphing ones, that is, we warp img1, img2 and img3.
+</p><p>
+<img src="./poly_direct.png" alt="Direct |" style="width: 30%; "> <img src="./poly_bilinear.png" alt="Bilinear |" style="width: 30%; "> <img src="./poly_gaussian.png" alt="Gaussian |" style="width: 30%; ">
+</p><p>
+</p><table class="table"><tr><td>Direct </td><td> Bilinear </td><td> Gaussian </td></tr></table>
+</p><p>
+We can observe that the 3 images version really contains the characristics of 3 images(look at the eyes)
+</p>
+<h2>Morphing Vedio and our Artifacts </h2>
+</p><p>
+A typical morphing result
+</p><p>
+<img src="./demo.gif" alt="demo"|" style="width: 30%; ">
+</p><p>
+We polymorph the 台大五姬 and morph it to the 6th ones.
+</p><p>
+<img src="./arti.gif" alt="artifect">
+<h2>What we have learned</h2><ul><li> Using OpenCV</li>
+<li> Write Ajax website</li>
+</ul>
+<h2>Open Source</h2>
+The whole source, including a website GUI, is open source (by us) and you can do download it on internet.
+<ul>
+	<li><a href="https://github.com/xflash96/morphaca">Morphaca: A morphing library</a></li>
+	<li><a href="https://github.com/xflash96/pyramid_mongo_rest">A Modern Pyramid Web Framework</a></li>
+	<li> For GUI, see <a href="http://powei.tw/morph">Morphaca</li>
+</ul>
+<h2>Reference</h2><ul><li> <a href="">Feature-based Wrapping</a> </li>
+<li> <a href="">Multisource Morphing</a></li>
+<li> <a href="http://www.springerlink.com/index/H92C5XD5HYHHGKV6.pdf">A work minimization approach to image morphing</a> by <strong>Peigheng et-al</strong></li>
+</ul></div>
+    </div>
+        <hr>
+        <footer>
+        <p>VFX 2012 Spring Homework 1</p>
+        </footer>
+    </div> <!-- /container -->
+    
+    <!-- template -->
+    <script id="upload-tmpl" type="text/x-handlebars-template">
+        <h1> Upload Your Images </h1>
+        <hr>
+        <div id="uploadStatus" class="{{alertStyle}}">{{msg}}</div>
+        <div class="row">
+            <div class="span6">
+                <form id="morphMeta" action="/morph/" method="post" accept-charset="utf-8" enctype="multipart/form-data" class="form-horizontal">
+                    <fieldset>
+                        <div class="control-group">
+                            <label class="control-label" for="srcImage"> From </label>
+                            <div class="controls">
+                                <input id="srcImage" class="input-file" type="file" name="src_image" value="" />
+                                <p class="help-block">Source Image</p>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label" for="dstImage"> To </label>
+                            <div class="controls">
+                                <input id="dstImage" class="input-file" type="file" name="dst_image" value="" />
+                                <p class="help-block">Destination Image</p>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary btn-large">Submit</button> &nbsp; &nbsp;
+                            <button type="cancel" class="btn">Cancel</button>
+                        </div>
+                    </fieldset>
+                </form>
+            </div>
+            <div class="span5 offset1">
+                <div id="srcImagePreview"></div>
+                <div id="dstImagePreview"></div>
+            </div>
+        </div>
+    </script>
+    <script id="showcase-tmpl" type="text/x-handlebars-template">
+        <div class="carousel-inner">
+            {{#each photos}}
+            <div class="item">
+                <img src="{{url}}">
+                <div class="carousel-caption">
+                    <label>{{{msg}}}</label>
+                </div>
+            </div>
+            {{/each}}
+        </div>
+        <a class="carousel-control left" href="#{{blockId}}" data-slide="prev">&lsaquo;</a>
+        <a class="carousel-control right" href="#{{blockId}}" data-slide="next">&rsaquo;</a>
+    </script>
+    <script id="main-tmpl" type="text/x-handlebars-template">
+        <div class="hero-unit">
+            <div class="row">
+                <div class="span3">
+                    <h1>&nbsp;</h1>
+                    <h1>Morph</h1>
+                    <h1>Yourself!</h1>
+                </div>
+                <div id="mainShowcase" class="carousel span5 offset2"></div>
+            </div>
+            <hr>
+            <div>
+                <p>Morph two image together. All is automous.
+                <a class="btn btn-primary btn-large offset1" href="#upload">Upload now &raquo;</a>
+                &nbsp;&nbsp;
+                <a class="btn btn-large" href="#report">Read report &raquo;</a></p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="span4">
+                <h2>Macaca</h2>
+                haha
+            </div>
+            <div class="span4">
+                <h2>Cacaka</h2>
+                pahah
+            </div>
+            <div class="span4">
+                <h2>Lakasa</h2>
+                dada
+            </div>
+        </div>
+    </script>
+    <script id="contact-tmpl" type="text/x-handlebars-template">
+        <div class="row">
+            <div class="span4">
+                <p>collab ... blablabla</p>
+            </div>
+            <div class="span4">
+                <h2>Po-Wei Wang</h2>
+                intro
+            </div>
+            <div class="span4">
+                <h2>Chun-Liang Li</h2>
+                intro
+            </div>
+        </div>
+    </script>
+    <script id="report-tmpl" type="text/x-handlebars-template">
+        <div class="row" id="wiki"></div>
+    </script>
+
+    <!-- Le javascripts -->
+    <script src="./Morphaca_files/jquery.min.js"></script>
+    <script src="./Morphaca_files/underscore-min.js"></script>
+    <script src="./Morphaca_files/backbone-min.js"></script>
+    <script src="./Morphaca_files/json2.js"></script>
+    <script src="./Morphaca_files/handlebars.min.js"></script>
+    <script src="./Morphaca_files/jquery.form.min.js"></script>
+    <script src="./Morphaca_files/creole.js"></script>
+    <script src="./Morphaca_files/bootstrap.min.js"></script>
+    <script src="./Morphaca_files/load-image.js"></script>
+    <script src="./Morphaca_files/bootstrap-carousel.js"></script>
+    <script type="text/javascript" src="./Morphaca_files/latexit.js"></script>
+    <script type="text/javascript" src="./Morphaca_files/prettify.js"></script>
+    <!--
+    <script src="/static/js/bootstrap-transition.js"></script>
+    <script src="/static/js/bootstrap-tab.js"></script>
+    <script src="/static/js/bootstrap-tooltip.js"></script>
+    <script src="/static/js/bootstrap-popover.js"></script>
+    <script src="/static/js/bootstrap-typeahead.js"></script>
+    -->
+
+  
+
+<div style="display: none; " id="orbiousinterest_dialog"><div class="container">  <div class="header">Mark as unread</div>  URL <input type="text" value="" class="url" readonly="readonly"><br>  Title <input type="text" value="" class="title"><br>  Tags <input type="text" value="tags, seperated by commas" class="tags empty">  <div class="buttons">     <input type="button" value="Cancel" class="cancel">     <input type="button" value="Save" class="save">  </div></div></div><a id="ORBVIOUS_DOMWindowHost" href="http://powei.tw/morph#orbiousinterest_dialog"></a></body><style type="text/css">embed[type*="application/x-shockwave-flash"],embed[src*=".swf"],object[type*="application/x-shockwave-flash"],object[codetype*="application/x-shockwave-flash"],object[src*=".swf"],object[codebase*="swflash.cab"],object[classid*="D27CDB6E-AE6D-11cf-96B8-444553540000"],object[classid*="d27cdb6e-ae6d-11cf-96b8-444553540000"],object[classid*="D27CDB6E-AE6D-11cf-96B8-444553540000"]{	display: none !important;}</style></html>

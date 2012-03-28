@@ -60,6 +60,7 @@ bool ParseParameters( Mat* &imgs, PARA &para, int argc, char *argv[] )
 		else if( argv[i][0] == '-' && argv[i][1] == 'w' )
 		{
 			int idx = atoi( argv[i]+2 ) ;
+			cerr << idx << endl ;
 			para.weight[idx] = atoi( argv[i+1] ) ;
 		}
 	}
